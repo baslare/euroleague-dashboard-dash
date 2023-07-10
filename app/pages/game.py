@@ -1,14 +1,15 @@
 import dash
+import dash_bootstrap_components as dbc
 from dash import Dash, html, dcc, dash_table, callback, Output, Input, State
+from dash.exceptions import PreventUpdate
 import plotly.express as px
 import pandas as pd
 import requests
 
-dash.register_page(__name__)
+dash.register_page(__name__, location="none")
 
 layout = html.Div(
     children=[
-
         html.Div(["Enter game code",
                   dcc.Input(id="game-code-input", type="number", value=1)]),
         html.Button("Submit", id="submit-button", n_clicks=0),
@@ -27,6 +28,9 @@ layout = html.Div(
     State(component_id="game-code-input", component_property="value")
 )
 def call_players_api(n_clicks, game_code):
+    if game_code < 1:
+        raise PreventUpdate
+
     response = requests.get(f"http://euroleague-api:8989/GamePlayers?game_code={game_code}")
     response = response.json()
     return response
