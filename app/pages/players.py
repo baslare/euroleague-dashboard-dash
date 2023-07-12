@@ -7,7 +7,7 @@ import plotly.express as px
 import pandas as pd
 import requests
 
-dash.register_page(__name__, location="none")
+dash.register_page(__name__, path_template="/players/<player_id>")
 
 
 def layout(player_id="PTGB"):
