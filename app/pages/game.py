@@ -14,6 +14,7 @@ dash.register_page(__name__)
 json_store = dcc.Store(id="json-store", data={})
 json_store_team = dcc.Store(id="json-store-teams", data={})
 json_store_points = dcc.Store(id="json-store-points", data={})
+key_stats_table_store = dcc.Store(id="key-stats-table-store", data={})
 key_stats_json = dcc.Store(id="key-stats-json", data=[])
 
 layout = html.Div(
@@ -21,6 +22,7 @@ layout = html.Div(
         json_store,
         json_store_team,
         json_store_points,
+        key_stats_table_store,
         key_stats_json,
         html.Div(["Enter game code",
                   dcc.Input(id="game-code-input", type="number", value=1)]),
@@ -36,7 +38,6 @@ layout = html.Div(
             "display": "flex",
             "align-items": "center",
             "justify-content": "center"}),
-        html.Div(dcc.Graph(figure=[], id="points-home")),
 
     ],
     style={"display": "flex",
@@ -137,36 +138,34 @@ def update_key_stats_df(response):
     return df_return.to_json(orient="split")
 
 
-@callback(Output('key-stats', 'children'),
-          [Input('key-stats-json', 'data')])
+@callback(Output('key-stats-table-store', 'data'),
+          Input('key-stats-json', 'data'))
 def update_key_stats_output(json_df):
     info_dataframe = pd.read_json(json_df, orient='split')
 
     data = info_dataframe.to_dict("records")
     cols = [{"name": i, "id": i} for i in info_dataframe.columns]
 
-    child = [
-        dash_table.DataTable(
-            id='key-stats-table',
-            data=data,
-            columns=cols,
-            style_as_list_view=True,
-            style_data_conditional=[
-                {"if": {"column_id": "left_col"},
-                 "textAlign": "right"},
-                {"if": {"column_id": "mid_col"},
-                 "textAlign": "center",
-                 "font-weight": "bold"},
-                {"if": {"column_id": "right_col"},
-                 "textAlign": "left"}
+    child = dash_table.DataTable(
+        id='key-stats-table',
+        data=data,
+        columns=cols,
+        style_as_list_view=True,
+        style_data_conditional=[
+            {"if": {"column_id": "left_col"},
+             "textAlign": "right"},
+            {"if": {"column_id": "mid_col"},
+             "textAlign": "center",
+             "font-weight": "bold"},
+            {"if": {"column_id": "right_col"},
+             "textAlign": "left"}
+        ],
+        style_header={"display": "none"},
+        style_cell={"font_size": "12px"},
+        fill_width=False
 
-            ],
-            style_header={"display": "none"},
-            style_cell={"font_size": "12px"},
-            fill_width=False
+    )
 
-        )
-    ]
     return child
 
 
@@ -181,10 +180,31 @@ def call_points_single_game_api(game_code):
 
 
 @callback(
-    Output(component_id="points-home", component_property="figure"),
-    Input(component_id="json-store-points", component_property="data")
+    Output(component_id="key-stats", component_property="children"),
+    [Input(component_id="json-store-points", component_property="data"),
+     Input(component_id="key-stats-table-store", component_property="data")]
 )
-def plot_points(response):
+def plot_points(response, key_stats_df):
     df = pd.DataFrame.from_dict(response)
 
-    return px.scatter(df, x="x_new", y="y_new", color="missed")
+    fig_home = px.scatter(
+        df.loc[df["home"], :],
+        x="COORD_X",
+        y="COORD_Y",
+        color="missed").update_yaxes(range=[-200, 1200]).update_xaxes(range=[-800, 800])
+    fig_away = px.scatter(
+        df.loc[~df["home"], :],
+        x="COORD_X",
+        y="COORD_Y",
+        color="missed").update_yaxes(range=[-200, 1200]).update_xaxes(range=[-800, 800])
+
+    chart_home = html.Div(dcc.Graph(
+        figure=fig_home,
+        id="points-home"),
+        style={"width": "25%"})
+    chart_away = html.Div(dcc.Graph(
+        figure=fig_away,
+        id="points-away"),
+        style={"width": "25%"})
+
+    return [chart_home, key_stats_df, chart_away]
