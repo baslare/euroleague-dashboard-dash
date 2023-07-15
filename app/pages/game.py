@@ -2,6 +2,7 @@ import json
 
 import dash
 import dash_bootstrap_components as dbc
+import numpy as np
 from dash import Dash, html, dcc, dash_table, callback, Output, Input, State
 from dash.dcc import Store
 from dash.exceptions import PreventUpdate
@@ -38,7 +39,10 @@ layout = html.Div(
             "display": "flex",
             "align-items": "center",
             "justify-content": "center"}),
-
+        html.Div(id="box-score", children=[], style={
+            "display": "flex",
+            "align-items": "flex-start",
+            "justify-content": "center"})
     ],
     style={"display": "flex",
            "flex-direction": "column",
@@ -208,3 +212,107 @@ def plot_points(response, key_stats_df):
         style={"width": "25%"})
 
     return [chart_home, key_stats_df, chart_away]
+
+
+@callback(
+    Output(component_id="box-score", component_property="children"),
+    Input(component_id="json-store", component_property="data")
+)
+def update_boxscore(response):
+    df = pd.DataFrame.from_dict(response)
+
+    df["2FGA"] = df["2FGA"].replace(0, np.nan).astype("Int64")
+    df["3FGA"] = df["3FGA"].replace(0, np.nan).astype("Int64")
+    df["FTA"] = df["FTA"].replace(0, np.nan).astype("Int64")
+    df["PF"] = df["CM"] + df["CMT"] + df["CMU"] + df["OF"]
+
+    df["2FG"] = df["2FGM"].astype(str) + "/" + df["2FGA"].astype(str) + " (" + (100 * df['2FGM'] / df['2FGA']).round(
+        1).astype(str) + "%)"
+
+    df["3FG"] = df["3FGM"].astype(str) + "/" + df["3FGA"].astype(str) + " (" + (100 * df['3FGM'] / df['3FGA']).round(
+        1).astype(str) + "%)"
+
+    df["FT"] = df["FTM"].astype(str) + "/" + df["FTA"].astype(str) + " (" + (100 * df['FTM'] / df['FTA']).round(
+        1).astype(str) + "%)"
+
+    df["DREB"] = df["D"].astype(str) + " (" + (100 * df['DREBR']).round(1).astype(str) + "%)"
+
+    df["OREB"] = df["O"].astype(str) + " (" + (100 * df['OREBR']).round(1).astype(str) + "%)"
+
+    df["USG"] = (100 * df["usage"]).round(1).astype(str) + "%"
+
+    df["PER"] = (df["PER"]).round(1)
+
+    df["tmp"] = df["duration"] % 60
+    df["tmp"] = df.apply(lambda x: f"0{x['tmp']}" if x["tmp"] < 10 else f"{x['tmp']}", axis=1)
+
+    df["MIN"] = (df["duration"] / 60).astype(int).astype(str) + ":" + df["tmp"]
+
+    df["TREB"] = df["D"] + df["O"]
+
+    df = df.replace(0, np.nan)
+
+    df.loc[df["2FGA"].isna(), "2FG"] = np.nan
+    df.loc[df["3FGA"].isna(), "3FG"] = np.nan
+    df.loc[df["FTA"].isna(), "FT"] = np.nan
+
+    df["Name"] = "<a href='" + "/players/" + df["PLAYER_ID"] + "' style='vertical-align: middle '>" + df["playerName"] + "</a>"
+
+    df = df[
+        ["Name", "MIN", "pts", "USG", "2FG", "3FG", "FT", "DREB", "OREB", "TREB", "AS", "TO", "ST", "FV","PF","RV","PIR", "PER",
+         "home"]]
+
+    df_home = df.loc[df["home"], :]
+    df_away = df.loc[~df["home"], :]
+
+    del df_home["home"]
+    del df_away["home"]
+
+    df_dict_home = df_home.to_dict("records")
+    df_dict_away = df_away.to_dict("records")
+
+    cols = [{"name": i, "id": i} for i in df_home.columns[1:]]
+    cols.insert(0, {"name": "Name", "id": "Name", "presentation": "markdown"})
+    child_home = dash_table.DataTable(
+        id='box-score-table-home',
+        data=df_dict_home,
+        columns=cols,
+        # style_header={"display": "none"},
+        style_cell={"font_size": "10px"},
+        fill_width=False,
+        markdown_options={"html": True},
+        style_data_conditional=[
+            {"if": {"column_id": "pts"},
+             "font-weight": "bold",
+             "text-align": "center"},
+            {"if": {"column_id": "Name"},
+             "verticalAlign": "middle"},
+
+        ],
+        style_data = {"text-align": "center"},
+        style_header={"textAlign": "center"}
+
+    )
+
+    child_away = dash_table.DataTable(
+        id='box-score-table-away',
+        data=df_dict_away,
+        columns=cols,
+        # style_header={"display": "none"},
+        style_cell={"font_size": "10px"},
+        fill_width=False,
+        markdown_options={"html": True},
+        style_data_conditional=[
+            {"if": {"column_id": "pts"},
+             "font-weight": "bold",
+             "text-align": "center"},
+            {"if": {"column_id": "Name"},
+             "verticalAlign": "middle"
+             }
+        ],
+        style_data={"text-align": "center"},
+        style_header={"textAlign": "center"}
+
+    )
+
+    return [child_home, html.Div(style={"width": "5%"}), child_away]
