@@ -1,30 +1,34 @@
-import json
-
 import dash
-import dash_bootstrap_components as dbc
 import numpy as np
 from dash import Dash, html, dcc, dash_table, callback, Output, Input, State
-from dash.dcc import Store
-from dash.exceptions import PreventUpdate
 import plotly.express as px
 import pandas as pd
 import requests
+import igviz as ig
+import networkx as nx
+import plotly.graph_objects as go
 
 dash.register_page(__name__)
+
+features = pd.read_csv("assets/features.csv")
 
 json_store = dcc.Store(id="json-store", data={})
 json_store_team = dcc.Store(id="json-store-teams", data={})
 json_store_points = dcc.Store(id="json-store-points", data={})
+json_store_assists = dcc.Store(id="json-store-assists", data={})
 key_stats_table_store = dcc.Store(id="key-stats-table-store", data={})
 key_stats_json = dcc.Store(id="key-stats-json", data=[])
+court_figure_df = dcc.Store(id="court-figure-store", data=features.to_json(orient="split"))
 
 layout = html.Div(
     children=[
         json_store,
         json_store_team,
         json_store_points,
+        json_store_assists,
         key_stats_table_store,
         key_stats_json,
+        court_figure_df,
         html.Div(["Enter game code",
                   dcc.Input(id="game-code-input", type="number", value=1)]),
         html.Div(id="score-title", style={"height": "100px",
@@ -40,6 +44,10 @@ layout = html.Div(
             "align-items": "center",
             "justify-content": "center"}),
         html.Div(id="box-score", children=[], style={
+            "display": "flex",
+            "align-items": "flex-start",
+            "justify-content": "center"}),
+        html.Div(id="assist-charts", children=[], style={
             "display": "flex",
             "align-items": "flex-start",
             "justify-content": "center"})
@@ -186,21 +194,112 @@ def call_points_single_game_api(game_code):
 @callback(
     Output(component_id="key-stats", component_property="children"),
     [Input(component_id="json-store-points", component_property="data"),
-     Input(component_id="key-stats-table-store", component_property="data")]
-)
-def plot_points(response, key_stats_df):
-    df = pd.DataFrame.from_dict(response)
+     Input(component_id="key-stats-table-store", component_property="data"),
+     Input(component_id="court-figure-store", component_property="data")
 
-    fig_home = px.scatter(
-        df.loc[df["home"], :],
-        x="COORD_X",
-        y="COORD_Y",
-        color="missed").update_yaxes(range=[-200, 1200]).update_xaxes(range=[-800, 800])
-    fig_away = px.scatter(
-        df.loc[~df["home"], :],
-        x="COORD_X",
-        y="COORD_Y",
-        color="missed").update_yaxes(range=[-200, 1200]).update_xaxes(range=[-800, 800])
+     ]
+)
+def plot_points(response, key_stats_df, court_df):
+    df = pd.DataFrame.from_dict(response)
+    court_df = pd.read_json(court_df, orient='split')
+
+    fig = go.Figure()
+
+    for x in court_df["type"].unique().tolist():
+        fig.add_trace(
+            go.Scatter(x=features.loc[features["type"] == x, "y"],
+                       y=features.loc[features["type"] == x, "x"],
+                       marker={"color": "black"}))
+
+    fig.update_traces(showlegend=False)
+
+    df["marker"] = np.where(df["missed"], "x", "circle-open")
+
+    df_home = df.loc[df["home"], :]
+    df_away = df.loc[~df["home"], :]
+
+    fig_home = fig.add_trace(go.Histogram2dContour(
+        x=df_home["COORD_X"].tolist(),
+        y=df_home["COORD_Y"].tolist(),
+        colorscale=['rgb(255, 255, 255)'] + px.colors.sequential.Magma[1:][::-1],
+        showscale=False,
+        line=dict(width=0),
+        hoverinfo='none',
+        xaxis="x",
+        yaxis="y"
+    )).add_trace(
+        go.Scatter(x=df_home["COORD_X"].tolist(),
+                   y=df_home["COORD_Y"].tolist(),
+                   mode='markers',
+                   marker=dict(
+                       symbol=df_home["marker"].tolist(),
+                       color='black',
+                       size=7,
+
+                   ),
+                   xaxis="x",
+                   yaxis="y",
+                   hoverinfo='none',
+                   customdata=np.stack((df_home['PLAYER'], df_home['ID_ACTION']), axis=-1),
+                   hovertemplate="<b>Player</b> %{customdata[0]} <br>" +
+                                 "<b>Shot Type</b> %{customdata[1]}"
+                   )).update_yaxes(
+        range=[-200, 1200],
+        gridcolor='White',
+        scaleanchor="x",
+        scaleratio=1,
+    ).update_xaxes(
+        range=[-800, 800],
+        gridcolor='White').update_traces(showlegend=False).update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+
+    fig = go.Figure()
+
+    for x in court_df["type"].unique().tolist():
+        fig.add_trace(
+            go.Scatter(x=features.loc[features["type"] == x, "y"],
+                       y=features.loc[features["type"] == x, "x"],
+                       marker={"color": "black"}))
+
+    fig.update_traces(showlegend=False)
+
+    fig_away = fig.add_trace(go.Histogram2dContour(
+        x=df_away["COORD_X"].tolist(),
+        y=df_away["COORD_Y"].tolist(),
+        colorscale=['rgb(255, 255, 255)'] + px.colors.sequential.Magma[1:][::-1],
+        showscale=False,
+        line=dict(width=0),
+        hoverinfo='none',
+        xaxis="x",
+        yaxis="y"
+    )).add_trace(
+        go.Scatter(x=df_away["COORD_X"].tolist(),
+                   y=df_away["COORD_Y"].tolist(),
+                   mode='markers',
+                   marker=dict(
+                       symbol=df_away["marker"].tolist(),
+                       color='black',
+                       size=7
+                   ),
+                   xaxis="x",
+                   yaxis="y",
+                   hoverinfo='none',
+                   customdata=np.stack((df_away['PLAYER'], df_away['ID_ACTION']), axis=-1),
+                   hovertemplate="<b>Player</b> %{customdata[0]} <br>" +
+                                 "<b>Shot Type</b> %{customdata[1]}"
+                   )).update_yaxes(
+        range=[-200, 1200],
+        gridcolor='White',
+        scaleanchor="x",
+        scaleratio=1,
+    ).update_xaxes(
+        range=[-800, 800],
+        gridcolor='White').update_traces(showlegend=False).update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
 
     chart_home = html.Div(dcc.Graph(
         figure=fig_home,
@@ -221,33 +320,29 @@ def plot_points(response, key_stats_df):
 def update_boxscore(response):
     df = pd.DataFrame.from_dict(response)
 
+    rp_quantile = requests.get(f"http://euroleague-api:8989/Quantile?type=player")
+    rp_quantile = rp_quantile.json()
+
+    df_quantile = pd.DataFrame.from_dict(rp_quantile)
+    quantiles = df_quantile["quantiles"].loc[0]
+
     df["2FGA"] = df["2FGA"].replace(0, np.nan).astype("Int64")
     df["3FGA"] = df["3FGA"].replace(0, np.nan).astype("Int64")
     df["FTA"] = df["FTA"].replace(0, np.nan).astype("Int64")
     df["PF"] = df["CM"] + df["CMT"] + df["CMU"] + df["OF"]
-
     df["2FG"] = df["2FGM"].astype(str) + "/" + df["2FGA"].astype(str) + " (" + (100 * df['2FGM'] / df['2FGA']).round(
         1).astype(str) + "%)"
-
     df["3FG"] = df["3FGM"].astype(str) + "/" + df["3FGA"].astype(str) + " (" + (100 * df['3FGM'] / df['3FGA']).round(
         1).astype(str) + "%)"
-
     df["FT"] = df["FTM"].astype(str) + "/" + df["FTA"].astype(str) + " (" + (100 * df['FTM'] / df['FTA']).round(
         1).astype(str) + "%)"
-
     df["DREB"] = df["D"].astype(str) + " (" + (100 * df['DREBR']).round(1).astype(str) + "%)"
-
     df["OREB"] = df["O"].astype(str) + " (" + (100 * df['OREBR']).round(1).astype(str) + "%)"
-
     df["USG"] = (100 * df["usage"]).round(1).astype(str) + "%"
-
     df["PER"] = (df["PER"]).round(1)
-
     df["tmp"] = df["duration"] % 60
     df["tmp"] = df.apply(lambda x: f"0{x['tmp']}" if x["tmp"] < 10 else f"{x['tmp']}", axis=1)
-
     df["MIN"] = (df["duration"] / 60).astype(int).astype(str) + ":" + df["tmp"]
-
     df["TREB"] = df["D"] + df["O"]
 
     df = df.replace(0, np.nan)
@@ -256,10 +351,12 @@ def update_boxscore(response):
     df.loc[df["3FGA"].isna(), "3FG"] = np.nan
     df.loc[df["FTA"].isna(), "FT"] = np.nan
 
-    df["Name"] = "<a href='" + "/players/" + df["PLAYER_ID"] + "' style='vertical-align: middle '>" + df["playerName"] + "</a>"
+    df["Name"] = "<a href='" + "/players/" + df["PLAYER_ID"] + "' style='vertical-align: middle '>" + df[
+        "playerName"] + "</a>"
 
     df = df[
-        ["Name", "MIN", "pts", "USG", "2FG", "3FG", "FT", "DREB", "OREB", "TREB", "AS", "TO", "ST", "FV","PF","RV","PIR", "PER",
+        ["Name", "MIN", "pts", "USG", "2FG", "3FG", "FT", "DREB", "OREB", "TREB", "AS", "TO", "ST", "FV", "PF", "RV",
+         "PIR", "PER",
          "home"]]
 
     df_home = df.loc[df["home"], :]
@@ -277,8 +374,8 @@ def update_boxscore(response):
         id='box-score-table-home',
         data=df_dict_home,
         columns=cols,
-        # style_header={"display": "none"},
-        style_cell={"font_size": "10px"},
+        style_cell={"font_size": "10px",
+                    "font_family": "sans-serif"},
         fill_width=False,
         markdown_options={"html": True},
         style_data_conditional=[
@@ -287,9 +384,37 @@ def update_boxscore(response):
              "text-align": "center"},
             {"if": {"column_id": "Name"},
              "verticalAlign": "middle"},
+            {"if": {"column_id": "PIR"},
+             "font-weight": "bold"}
+            ,
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} <= " + f"{quantiles[0]}"},
+             "color": "#9d9d9d"
+             },
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} >=" + f"{quantiles[0]}" + " && {PIR} <= " + f"{quantiles[1]}"},
+             "color": "#1eff00"
+             },
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} > " + f"{quantiles[1]}" + " && {PIR} <= " + f"{quantiles[2]}"},
+             "color": "#0070dd"
+             },
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} > " + f"{quantiles[2]}" + " && {PIR} <= " + f"{quantiles[3]}"},
+             "color": "#a335ee"
+             },
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} > " + f"{quantiles[3]}" + " && {PIR} <= " + f"{quantiles[4]}"},
+             "color": "#ff8000"
+             }
 
         ],
-        style_data = {"text-align": "center"},
+        style_data={"text-align": "center",
+                    "border-left-color": "#F9F9F9",
+                    "border-right-color": "#F9F9F9",
+                    "border-left-width": "1px thin",
+                    "border-right-width": "1px thin"
+                    },
         style_header={"textAlign": "center"}
 
     )
@@ -299,7 +424,8 @@ def update_boxscore(response):
         data=df_dict_away,
         columns=cols,
         # style_header={"display": "none"},
-        style_cell={"font_size": "10px"},
+        style_cell={"font_size": "10px",
+                    "font_family": "sans-serif"},
         fill_width=False,
         markdown_options={"html": True},
         style_data_conditional=[
@@ -308,11 +434,115 @@ def update_boxscore(response):
              "text-align": "center"},
             {"if": {"column_id": "Name"},
              "verticalAlign": "middle"
+             },
+            {"if":{"column_id":"PIR"},
+             "font-weight": "bold"}
+            ,
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} < " + f"{quantiles[0]}"},
+             "color": "#9d9d9d"
+             },
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} > " + f"{quantiles[0]}" + " && {PIR} <= " + f"{quantiles[1]}"},
+             "color": "#1eff00"
+             },
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} > " + f"{quantiles[1]}" + " && {PIR} <= " + f"{quantiles[2]}"},
+             "color": "#0070dd"
+             },
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} > " + f"{quantiles[2]}" + " && {PIR} <= " + f"{quantiles[3]}"},
+             "color": "#a335ee"
+             },
+            {"if": {"column_id": "PIR",
+                    "filter_query": "{PIR} > " + f"{quantiles[3]}" + " && {PIR} <= " + f"{quantiles[4]}"},
+             "color": "#ff8000"
              }
         ],
-        style_data={"text-align": "center"},
+        style_data={"text-align": "center",
+                    "border-left-color": "#F9F9F9",
+                    "border-right-color": "#F9F9F9",
+                    "border-left-width": "1px thin",
+                    "border-right-width": "1px thin"
+
+                    },
         style_header={"textAlign": "center"}
 
     )
 
     return [child_home, html.Div(style={"width": "5%"}), child_away]
+
+
+@callback(
+    Output(component_id="json-store-assists", component_property="data"),
+    Input(component_id="game-code-input", component_property="value")
+)
+def call_assists_api(game_code):
+    response = requests.get(f"http://euroleague-api:8989/AssistsSingleGame?game_code={game_code}")
+    response = response.json()
+    return response
+
+
+@callback(
+    Output(component_id="assist-charts", component_property="children"),
+    Input(component_id="json-store-assists", component_property="data"),
+)
+def plot_assist_charts(response):
+    def createDiGraph(df, players):
+        # Create a directed graph (digraph) object; i.e., a graph in which the edges
+        # have a direction associated with them.
+        G = nx.DiGraph()
+
+        # Add nodes:
+        nodes = players
+        G.add_nodes_from(nodes)
+
+        # Add edges or links between the nodes:
+        edges = [(x, y) for x, y in zip(df["playerNameAssisting"], df["playerName"])]
+        edge_labels = {tup: lab for tup, lab in zip(edges, df["count"])}
+        node_labels = {x: x for x in nodes}
+
+        G.add_edges_from(edges)
+        nx.set_edge_attributes(G, edge_labels, "edge_prop")
+        nx.set_node_attributes(G, node_labels, "node_prop")
+
+        return G
+
+    df = pd.DataFrame.from_dict(response)
+    df["count"] = 1
+
+    df = df.groupby(["playerNameAssisting", "playerName", "home"]).agg({"count": "sum"}).reset_index()
+
+    df_home = df.loc[df["home"], :]
+    df_away = df.loc[~df["home"], :]
+
+    del df_home["home"]
+    del df_away["home"]
+
+    players_home = pd.concat([df_home["playerNameAssisting"], df_home["playerName"]]).unique()
+    players_away = pd.concat([df_away["playerNameAssisting"], df_away["playerName"]]).unique()
+
+    home_graph = createDiGraph(df_home, players_home)
+    away_graph = createDiGraph(df_away, players_away)
+
+    home_plot = ig.plot(home_graph, size_method="static",
+                        color_method="#ffcccb",
+                        edge_label="edge_prop",
+                        node_label="node_prop",
+                        edge_label_position="bottom center",
+                        layout="circular").update_traces(marker_showscale=False).update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+
+    away_plot = ig.plot(away_graph, size_method="static",
+                        color_method="#164E9B",
+                        edge_label="edge_prop",
+                        edge_label_position="bottom center",
+                        node_label="node_prop",
+                        layout="circular").update_traces(marker_showscale=False).update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)'
+    )
+
+    return [dcc.Graph(figure=home_plot), html.Div(style={"width": "5%"}), dcc.Graph(figure=away_plot)]

@@ -1,0 +1,18 @@
+p {
+  margin-bottom: 0 !important;
+}
+
+td:hover::before {
+
+    background-color: #ffa;
+
+    }
+
+td:hover::after {
+        background-color: #ffa;
+
+    }
+
+.modebar{
+      display: none !important;
+}
