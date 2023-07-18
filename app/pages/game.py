@@ -93,18 +93,6 @@ def plot_game_points(response):
 
 
 @callback(
-    Output(component_id="teams-data-table", component_property="data"),
-    # Output(component_id="teams-data-table", component_property="columns"),
-    Input(component_id="json-store", component_property="data")
-)
-def update_players_table(response):
-    # df = pd.DataFrame.from_dict(data)
-    # col_dict = [{"name": x, "id": x} for x in df.columns]
-
-    return response
-
-
-@callback(
     Output(component_id="json-store-teams", component_property="data"),
     Input(component_id="game-code-input", component_property="value")
 )

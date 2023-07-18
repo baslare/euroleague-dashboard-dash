@@ -12,15 +12,15 @@ dash.register_page(__name__, path_template="/players/<player_id>")
 
 def layout(player_id="PTGB"):
     id_store = dcc.Store(id="player-id-store", data=player_id)
-    json_store = dcc.Store(id="player-id-json", data=call_players_api(0, player_id))
+    json_store_player = dcc.Store(id="json-store-player", data=[])
 
     layout_local = html.Div(
+
         children=[
-            html.Div(children=f"Player ID: {id_store.data}", id="player-stat-as"),
-            html.Div(children=f"Assists: {json_store.data['AS']}", id="player-stat-as"),
-
-
-        ] + [html.Div(children=f"{x}: {json_store.data.get(x)}", id=f"player-stat-{x}") for x in json_store.data.keys()]
+            json_store_player,
+            id_store,
+            html.Div(id="player-table", children=[])
+        ]
 
     )
 
@@ -28,30 +28,30 @@ def layout(player_id="PTGB"):
 
 
 @callback(
-    Output(component_id="player-id-json", component_property="data"),
-    Input(component_id="submit-button-player", component_property="n_clicks"),
-    State(component_id="player-id-input", component_property="value")
+    Output(component_id="json-store-player", component_property="data"),
+    Input(component_id="player-id-store", component_property="data")
 )
-def call_players_api(n_clicks, player_id):
+def call_players_api(player_id):
     response = requests.get(f"http://euroleague-api:8989/Player?player_id={player_id}")
     response = response.json()
     return response
 
 
 @callback(
-    Output(component_id="player-data-table", component_property="data"),
-    # Output(component_id="teams-data-table", component_property="columns"),
-    Input(component_id="player-id-json", component_property="data")
+    Output(component_id="player-table", component_property="children"),
+    Input(component_id="json-store-player", component_property="data"),
+    Input(component_id="player-id-store", component_property="data")
 )
-def update_player_table(data):
-    df = pd.Series(data).to_frame().transpose().apply(lambda x: list(x))
-    # col_dict = [{"name": x, "id": x} for x in df.columns]
-    return json.dumps(df.to_json("records"))
+def update_player_table(response, player_id):
+    df = pd.DataFrame(response, index=[0])
+    data = df.to_dict("records")
 
+    cols = [{"name": i, "id": i} for i in df.columns]
+    child = dash_table.DataTable(
+        id='player-table-data',
+        data=data,
+        columns=cols)
 
-@callback(
-    Output(component_id="player-stat-as", component_property="children"),
-    Input(component_id="player-id-json", component_property="data")
-)
-def print_stats(data):
-    return data["AS"]
+    img_url = f"photos/{player_id}.png"
+
+    return [html.Img(src=dash.get_asset_url(img_url)), child]
