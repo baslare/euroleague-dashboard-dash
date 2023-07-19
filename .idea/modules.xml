@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../euroleague-dashboard/.idea/euroleague-dashboard.iml" filepath="$PROJECT_DIR$/../euroleague-dashboard/.idea/euroleague-dashboard.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../euroleague-dashboard-api/.idea/euroleague-dashboard-api.iml" filepath="$PROJECT_DIR$/../euroleague-dashboard-api/.idea/euroleague-dashboard-api.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/euroleague-dashboard-dash.iml" filepath="$PROJECT_DIR$/.idea/euroleague-dashboard-dash.iml" />
     </modules>
   </component>

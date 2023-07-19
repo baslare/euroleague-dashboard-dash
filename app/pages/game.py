@@ -339,6 +339,8 @@ def update_boxscore(response):
     df.loc[df["3FGA"].isna(), "3FG"] = np.nan
     df.loc[df["FTA"].isna(), "FT"] = np.nan
 
+    df = df.copy()
+
     df["Name"] = "<a href='" + "/players/" + df["PLAYER_ID"] + "' style='vertical-align: middle '>" + df[
         "playerName"] + "</a>"
 
@@ -380,7 +382,7 @@ def update_boxscore(response):
              "color": "#9d9d9d"
              },
             {"if": {"column_id": "PIR",
-                    "filter_query": "{PIR} >=" + f"{quantiles[0]}" + " && {PIR} <= " + f"{quantiles[1]}"},
+                    "filter_query": "{PIR} >" + f"{quantiles[0]}" + " && {PIR} <= " + f"{quantiles[1]}"},
              "color": "#1eff00"
              },
             {"if": {"column_id": "PIR",
@@ -427,7 +429,7 @@ def update_boxscore(response):
              "font-weight": "bold"}
             ,
             {"if": {"column_id": "PIR",
-                    "filter_query": "{PIR} < " + f"{quantiles[0]}"},
+                    "filter_query": "{PIR} <= " + f"{quantiles[0]}"},
              "color": "#9d9d9d"
              },
             {"if": {"column_id": "PIR",
