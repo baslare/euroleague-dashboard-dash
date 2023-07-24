@@ -182,7 +182,7 @@ def update_player_table(response):
     stat_keys = ["AS", "TO", "3FGM", "3FGA", "2FGA", "2FGM",
                  "FTM", "FTA", "D", "O", "REB",
                  "RV", "CM", "FV", "AG", "ST", "OF", "CMT", "CMU", "CMD",
-                 "multi_ft", "assisted_2fg", "assisted_3fg",
+                 "multi_ft", "multi_ft_count", "tech_ft", "assisted_2fg", "assisted_3fg",
                  "assisted_ft", "and_one_2fg", "and_one_3fg", "pos"]
 
     df_self = df.loc[0, stat_keys].reset_index(drop=True)
