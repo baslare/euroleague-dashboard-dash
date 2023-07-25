@@ -343,7 +343,7 @@ def update_boxscore(response):
     df["PER"] = (df["PER"]).round(1)
     df["tmp"] = df["duration"] % 60
     df["tmp"] = df.apply(lambda x: f"0{x['tmp']}" if x["tmp"] < 10 else f"{x['tmp']}", axis=1)
-    df["MIN"] = (df["duration"] / 60).astype(int).astype(str) + ":" + df["tmp"]
+    df["MIN"] = (df["duration"].fillna(0) / 60).astype(int).astype(str) + ":" + df["tmp"]
     df["TREB"] = df["D"] + df["O"]
 
     df = df.replace(0, np.nan)

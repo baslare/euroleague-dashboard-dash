@@ -54,9 +54,11 @@ def layout(player_id="PTGB"):
                             "flex-direction": "row",
                             "width": "50%"}),
             html.Div(id="points-plot", children=[], style={"display": "flex",
-                                                           "flex-direction": "row"}),
-            html.Div(id="player-table", children=[]),
-            html.Div(id="history-table", children=[])
+                                                           "flex-direction": "row"
+                                                           }),
+            html.Div(id="history-table", children=[], style={"width": "60%"}),
+            html.Div(id="player-table", children=[])
+
         ],
         style={"display": "flex",
                "flex-direction": "column",
@@ -89,7 +91,7 @@ def update_player_highlights(response, player_id):
     df["as2P"] = df["assisted_2fg"] / df["2FGM"]
     df["as3P"] = df["assisted_3fg"] / df["3FGM"]
     df["tmp"] = (df["duration_avg"] % 60).astype(int)
-    df["tmp"] = df.apply(lambda x: f"0{x['tmp']}" if x["tmp"] < 10 else f"{x['tmp']}", axis=1)
+    df["tmp"] = df.apply(lambda row: f"0{row['tmp']}" if row["tmp"] < 10 else f"{row['tmp']}", axis=1)
     df["MPG"] = (df["duration_avg"] / 60).astype(int).astype(str) + ":" + df["tmp"]
 
     highlight_stats = ["playerName", "p", "CODETEAM",
@@ -433,22 +435,31 @@ def update_history_table(player_id):
     game_codes = df_history["game_code"].tolist()
     team_codes = df_history["CODETEAM"].unique().tolist()
 
-    game_query_string = "?team=" + "&team".join([str(x) for x in team_codes]) + \
+    game_query_string = "?team=" + "&team=".join([str(x) for x in team_codes]) + \
                         "".join([f"&game_code={str(x)}" for x in game_codes])
 
     response_game_results = requests.get(f"http://euroleague-api:8989/Game{game_query_string}")
     response_results = response_game_results.json()
+
     df_results = pd.DataFrame.from_dict(response_results)
 
     df_history = df_history.merge(df_results[["game_code", "points_scored", "opp_points_scored"]], how="left",
                                   on="game_code")
 
     df_history["game"] = "<a href='" + "/game/" + df_history["game_code"].astype(str) + "'>" + df_history[
-        "CODETEAM"] + " " + df_history["points_scored"].astype(str) + " - " + df_history["opp_points_scored"].astype(str) + " " + df_history["OPP"] + "</a>"
+        "CODETEAM"] + " " + df_history["points_scored"].astype(str) + " - " + df_history["opp_points_scored"].astype(
+        str) + " " + df_history["OPP"] + "</a>"
 
-    df_history = df_history[["game", 'duration','pts', 'AS', 'REB', 'PIR', 'PER', 'usage', '2FGM', '2FGA', '3FGA', '3FGM', 'FTM', 'FTA', 'ST', 'FV', 'OREBR', 'DREBR', 'home', ]]
-    df_history[["usage","OREBR", "DREBR"]] = 100*df_history[["usage","OREBR", "DREBR"]]
-    df_history[["PER", "usage","OREBR", "DREBR"]] = df_history[["PER", "usage","OREBR", "DREBR"]].round(2)
+    df_history["duration"] = df_history["duration"].fillna(0)
+    df_history["tmp"] = (df_history["duration"] % 60).astype(int)
+    df_history["tmp"] = df_history.apply(lambda x: f"0{x['tmp']}" if x["tmp"] < 10 else f"{x['tmp']}", axis=1)
+    df_history["MIN"] = (df_history["duration"].fillna(0) / 60).astype(int).astype(str) + ":" + df_history["tmp"]
+
+    df_history = df_history[
+        ["game", 'MIN', 'pts', 'AS', 'REB', 'PIR', 'PER', 'usage', '2FGM', '2FGA', '3FGA', '3FGM', 'FTM', 'FTA', 'ST',
+         'FV', 'DREBR', 'OREBR', 'home']]
+    df_history[["usage", "OREBR", "DREBR"]] = 100 * df_history[["usage", "OREBR", "DREBR"]]
+    df_history[["PER", "usage", "OREBR", "DREBR"]] = df_history[["PER", "usage", "OREBR", "DREBR"]].round(2)
 
     df_history[["usage", "OREBR", "DREBR"]] = df_history[["usage", "OREBR", "DREBR"]].astype(str) + "%"
 
@@ -462,8 +473,12 @@ def update_history_table(player_id):
         data=data,
         columns=cols,
         style_cell={"font_size": "10px",
-                    "font_family": "sans-serif"},
-        fill_width=False,
+                    "font_family": "sans-serif",
+                    "text-align": "center"},
+        style_header={"font_size": "10px",
+                      "font_family": "sans-serif",
+                      "text-align": "center"},
+
         style_as_list_view=True,
         markdown_options={"html": True}
     )
