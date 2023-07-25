@@ -13,6 +13,12 @@ dash.register_page(__name__, path_template="/players/<player_id>")
 features = pd.read_csv("assets/features.csv")
 court_figure_df = dcc.Store(id="court-figure-store", data=features.to_json(orient="split"))
 
+init_player = requests.get(f"http://euroleague-api:8989/InitPlayer")
+init_player = init_player.json()
+init_player = pd.DataFrame.from_dict(init_player)
+
+options = {y: x for x, y in zip(init_player["playerName"], init_player["PLAYER_ID"])}
+
 
 def layout(player_id="PTGB"):
     id_store = dcc.Store(id="player-id-store", data=player_id)
@@ -24,7 +30,17 @@ def layout(player_id="PTGB"):
 
     layout_local = html.Div(
 
-        children=[
+        children=[html.Div([html.Div(dcc.Dropdown(
+            options=options,
+            value=player_id,
+            id="dropdown-player"
+
+        ),
+            style={"width": "50%"}),
+            html.Button('Submit', id='submit-val', n_clicks=0)], style={"display": "flex",
+                                                                        "flex-direction": "row",
+                                                                        "width": "50%"}),
+            dcc.Location(id="location"),
             court_figure_df,
             json_store_points,
             json_store_player,
@@ -37,9 +53,10 @@ def layout(player_id="PTGB"):
                      style={"display": "flex",
                             "flex-direction": "row",
                             "width": "50%"}),
-            html.Div(id="points-plot", children=[], style={"display":"flex",
-                                                           "flex-direction":"row"}),
-            html.Div(id="player-table", children=[])
+            html.Div(id="points-plot", children=[], style={"display": "flex",
+                                                           "flex-direction": "row"}),
+            html.Div(id="player-table", children=[]),
+            html.Div(id="history-table", children=[])
         ],
         style={"display": "flex",
                "flex-direction": "column",
@@ -78,7 +95,7 @@ def update_player_highlights(response, player_id):
     highlight_stats = ["playerName", "p", "CODETEAM",
                        "game_count", "MPG", "pts_avg", "PER_season", "PIR_avg",
                        "2FGP", "3FGR", "FTR", "ORtg_avg", "usage",
-                       "AS_avg", "TO_avg", "as2P", "as3P", "eFG_avg",
+                       "AS_avg", "TO_avg", "as2P", "as3P", "eFG",
                        "REB_avg", "D_avg", "O_avg", "DREBR", "OREBR",
                        "on_ORtg_avg", "off_ORtg_avg", "plus_minus_avg",
                        "on_DRtg_avg", "off_DRtg_avg", "FV_avg", "ST_avg",
@@ -393,3 +410,62 @@ def update_plots(points_fig, response_source, response_target):
     ]
 
     return children
+
+
+@callback(
+    Output("location", "pathname"),
+    State(component_id="dropdown-player", component_property="value"),
+    Input(component_id="submit-val", component_property="n_clicks"),
+)
+def navigate_to_url(val, n_clicks):
+    return f"/players/{val}"
+
+
+@callback(
+    Output(component_id="history-table", component_property="children"),
+    Input(component_id="player-id-store", component_property="data")
+)
+def update_history_table(player_id):
+    response_history = requests.get(f"http://euroleague-api:8989/GamePlayers?player_id={player_id}")
+    response_history = response_history.json()
+    df_history = pd.DataFrame.from_dict(response_history)
+
+    game_codes = df_history["game_code"].tolist()
+    team_codes = df_history["CODETEAM"].unique().tolist()
+
+    game_query_string = "?team=" + "&team".join([str(x) for x in team_codes]) + \
+                        "".join([f"&game_code={str(x)}" for x in game_codes])
+
+    response_game_results = requests.get(f"http://euroleague-api:8989/Game{game_query_string}")
+    response_results = response_game_results.json()
+    df_results = pd.DataFrame.from_dict(response_results)
+
+    df_history = df_history.merge(df_results[["game_code", "points_scored", "opp_points_scored"]], how="left",
+                                  on="game_code")
+
+    df_history["game"] = "<a href='" + "/game/" + df_history["game_code"].astype(str) + "'>" + df_history[
+        "CODETEAM"] + " " + df_history["points_scored"].astype(str) + " - " + df_history["opp_points_scored"].astype(str) + " " + df_history["OPP"] + "</a>"
+
+    df_history = df_history[["game", 'duration','pts', 'AS', 'REB', 'PIR', 'PER', 'usage', '2FGM', '2FGA', '3FGA', '3FGM', 'FTM', 'FTA', 'ST', 'FV', 'OREBR', 'DREBR', 'home', ]]
+    df_history[["usage","OREBR", "DREBR"]] = 100*df_history[["usage","OREBR", "DREBR"]]
+    df_history[["PER", "usage","OREBR", "DREBR"]] = df_history[["PER", "usage","OREBR", "DREBR"]].round(2)
+
+    df_history[["usage", "OREBR", "DREBR"]] = df_history[["usage", "OREBR", "DREBR"]].astype(str) + "%"
+
+    data = df_history.to_dict("records")
+
+    cols = [{"name": i, "id": i} for i in df_history.columns[1:]]
+    cols.insert(0, {"name": "game", "id": "game", "presentation": "markdown"})
+
+    child = dash_table.DataTable(
+        id='history-table-data',
+        data=data,
+        columns=cols,
+        style_cell={"font_size": "10px",
+                    "font_family": "sans-serif"},
+        fill_width=False,
+        style_as_list_view=True,
+        markdown_options={"html": True}
+    )
+
+    return child

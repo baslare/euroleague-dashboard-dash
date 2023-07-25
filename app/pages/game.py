@@ -8,61 +8,74 @@ import igviz as ig
 import networkx as nx
 import plotly.graph_objects as go
 
-dash.register_page(__name__)
-
+dash.register_page(__name__, path_template="/game/<game_code>")
 features = pd.read_csv("assets/features.csv")
 
-json_store = dcc.Store(id="json-store", data={})
-json_store_team = dcc.Store(id="json-store-teams", data={})
-json_store_points = dcc.Store(id="json-store-points", data={})
-json_store_assists = dcc.Store(id="json-store-assists", data={})
-key_stats_table_store = dcc.Store(id="key-stats-table-store", data={})
-key_stats_json = dcc.Store(id="key-stats-json", data=[])
-court_figure_df = dcc.Store(id="court-figure-store", data=features.to_json(orient="split"))
 
-layout = html.Div(
-    children=[
-        json_store,
-        json_store_team,
-        json_store_points,
-        json_store_assists,
-        key_stats_table_store,
-        key_stats_json,
-        court_figure_df,
-        html.Div(["Enter game code",
-                  dcc.Input(id="game-code-input", type="number", value=1)]),
-        html.Div(id="score-title", style={"height": "100px",
-                                          "width": "700px",
-                                          "display": "flex",
-                                          "align-items": "center",
-                                          "justify-content": "center",
-                                          "position": "relative",
-                                          "left": "50%",
-                                          "transform": "translate(-50%,0)"}),
-        html.Div(id="key-stats", children=[], style={
-            "display": "flex",
-            "align-items": "center",
-            "justify-content": "center"}),
-        html.Div(id="box-score", children=[], style={
-            "display": "flex",
-            "align-items": "flex-start",
-            "justify-content": "center"}),
-        html.Div(id="assist-charts", children=[], style={
-            "display": "flex",
-            "align-items": "flex-start",
-            "justify-content": "center"})
-    ],
-    style={"display": "flex",
-           "flex-direction": "column",
-           "justify-content": "center",
-           }
+def layout(game_code=1):
+    game_id_store = dcc.Store(id="game-code-store", data=game_code)
+    json_store = dcc.Store(id="json-store", data={})
+    json_store_team = dcc.Store(id="json-store-teams", data={})
+    json_store_points = dcc.Store(id="json-store-points", data={})
+    json_store_assists = dcc.Store(id="json-store-assists", data={})
+    key_stats_table_store = dcc.Store(id="key-stats-table-store", data={})
+    key_stats_json = dcc.Store(id="key-stats-json", data=[])
+    court_figure_df = dcc.Store(id="court-figure-store", data=features.to_json(orient="split"))
 
-)
+    layout_local = html.Div(
+        children=[
+
+            html.Div(["Enter game code",
+                      dcc.Input(id="game-code-input", type="number", value=game_code),
+                      html.Button('Submit', id='submit-val-game', n_clicks=0)], style={"display": "flex",
+                                                                                       "flex-direction": "row",
+                                                                                       "width": "50%"})
+            ,
+            dcc.Location(id="location-game"),
+            game_id_store,
+            json_store,
+            json_store_team,
+            json_store_points,
+            json_store_assists,
+            key_stats_table_store,
+            key_stats_json,
+            court_figure_df,
+            html.Div(id="score-title", style={"height": "100px",
+                                              "width": "700px",
+                                              "display": "flex",
+                                              "align-items": "center",
+                                              "justify-content": "center",
+                                              "position": "relative",
+                                              "left": "50%",
+                                              "transform": "translate(-50%,0)"}),
+            html.Div(id="key-stats", children=[], style={
+                "display": "flex",
+                "align-items": "center",
+                "justify-content": "center"}),
+            html.Div(id="box-score", children=[], style={
+                "display": "flex",
+                "align-items": "flex-start",
+                "justify-content": "center"}),
+            html.Div(id="assist-charts", children=[], style={
+                "display": "flex",
+                "align-items": "flex-start",
+                "justify-content": "center"})
+        ],
+        style={"display": "flex",
+               "flex-direction": "column",
+               "justify-content": "center",
+               }
+
+    )
+
+    return layout_local
+
+
 
 
 @callback(
     Output(component_id="json-store", component_property="data"),
-    Input(component_id="game-code-input", component_property="value")
+    Input(component_id="game-code-store", component_property="data")
 )
 def call_players_api(game_code):
     response = requests.get(f"http://euroleague-api:8989/GamePlayers?game_code={game_code}")
@@ -94,7 +107,7 @@ def plot_game_points(response):
 
 @callback(
     Output(component_id="json-store-teams", component_property="data"),
-    Input(component_id="game-code-input", component_property="value")
+    Input(component_id="game-code-store", component_property="data")
 )
 def call_game_lite_api(game_code):
     response = requests.get(f"http://euroleague-api:8989/GameLite?game_code={game_code}")
@@ -171,7 +184,7 @@ def update_key_stats_output(json_df):
 
 @callback(
     Output(component_id="json-store-points", component_property="data"),
-    Input(component_id="game-code-input", component_property="value")
+    Input(component_id="game-code-store", component_property="data")
 )
 def call_points_single_game_api(game_code):
     response = requests.get(f"http://euroleague-api:8989/PointsSingleGame?game_code={game_code}")
@@ -308,7 +321,7 @@ def plot_points(response, key_stats_df, court_df):
 def update_boxscore(response):
     df = pd.DataFrame.from_dict(response)
 
-    rp_quantile = requests.get(f"http://euroleague-api:8989/Quantile?type=player")
+    rp_quantile = requests.get(f"http://euroleague-api:8989/Quantile?type_quantile=player")
     rp_quantile = rp_quantile.json()
 
     df_quantile = pd.DataFrame.from_dict(rp_quantile)
@@ -425,7 +438,7 @@ def update_boxscore(response):
             {"if": {"column_id": "Name"},
              "verticalAlign": "middle"
              },
-            {"if":{"column_id":"PIR"},
+            {"if": {"column_id": "PIR"},
              "font-weight": "bold"}
             ,
             {"if": {"column_id": "PIR",
@@ -465,7 +478,7 @@ def update_boxscore(response):
 
 @callback(
     Output(component_id="json-store-assists", component_property="data"),
-    Input(component_id="game-code-input", component_property="value")
+    Input(component_id="game-code-store", component_property="data")
 )
 def call_assists_api(game_code):
     response = requests.get(f"http://euroleague-api:8989/AssistsSingleGame?game_code={game_code}")
@@ -536,3 +549,13 @@ def plot_assist_charts(response):
     )
 
     return [dcc.Graph(figure=home_plot), html.Div(style={"width": "5%"}), dcc.Graph(figure=away_plot)]
+
+
+@callback(
+    Output("location-game", "pathname"),
+    State(component_id="game-code-input", component_property="value"),
+    Input(component_id="submit-val-game", component_property="n_clicks")
+
+)
+def navigate_to_game_url(val, n_clicks):
+    return f"/game/{val}"
