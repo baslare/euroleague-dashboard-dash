@@ -13,14 +13,14 @@ dash.register_page(__name__, path_template="/players/<player_id>")
 features = pd.read_csv("assets/features.csv")
 court_figure_df = dcc.Store(id="court-figure-store", data=features.to_json(orient="split"))
 
-init_player = requests.get(f"http://euroleague-api:8989/InitPlayer")
-init_player = init_player.json()
-init_player = pd.DataFrame.from_dict(init_player)
-
-options = {y: x for x, y in zip(init_player["playerName"], init_player["PLAYER_ID"])}
-
 
 def layout(player_id="PTGB"):
+    init_player = requests.get(f"http://euroleague-api:8989/InitPlayer")
+    init_player = init_player.json()
+    init_player = pd.DataFrame.from_dict(init_player)
+
+    options = {y: x for x, y in zip(init_player["playerName"], init_player["PLAYER_ID"])}
+
     id_store = dcc.Store(id="player-id-store", data=player_id)
     json_store_player = dcc.Store(id="json-store-player", data=[])
     json_store_points = dcc.Store(id="json-store-points-player", data=[])
@@ -52,7 +52,9 @@ def layout(player_id="PTGB"):
                      children=[],
                      style={"display": "flex",
                             "flex-direction": "row",
-                            "width": "50%"}),
+                            "justify-content": "center",
+                            "width": "80%"
+                            }),
             html.Div(id="points-plot", children=[], style={"display": "flex",
                                                            "flex-direction": "row"
                                                            }),
@@ -83,9 +85,10 @@ def call_players_api(player_id):
 @callback(
     Output(component_id="player-highlights", component_property="children"),
     Input(component_id="json-store-player", component_property="data"),
-    Input(component_id="player-id-store", component_property="data")
+    Input(component_id="player-id-store", component_property="data"),
+    Input(component_id="points-plot-store", component_property="data")
 )
-def update_player_highlights(response, player_id):
+def update_player_highlights(response, player_id, points_plot):
     df = pd.DataFrame(response, index=[0])
 
     df["as2P"] = df["assisted_2fg"] / df["2FGM"]
@@ -137,7 +140,7 @@ def update_player_highlights(response, player_id):
 
     def generate_dash_elements(item):
         data_row = item.to_dict("records")
-        col_row = [{"name": i, "id": i} for i in item.columns]
+        col_row = [{"name": col, "id": col} for col in item.columns]
 
         table = dash_table.DataTable(
             data=data_row,
@@ -155,7 +158,7 @@ def update_player_highlights(response, player_id):
                          html.Div(style={"height": "10px"})],
                         style={"display": "flex",
                                "flex-direction": "column",
-                               "width": "50%"})
+                               })
 
     children_list = []
 
@@ -163,7 +166,9 @@ def update_player_highlights(response, player_id):
         children_list.append(generate_dash_elements(x))
 
     stats_wrapper = html.Div(children=children_list,
-                             style={"width": "50%"})
+                             style={"width": "20%"
+
+                                    })
 
     img_url = f"photos/{player_id}.png"
 
@@ -179,15 +184,77 @@ def update_player_highlights(response, player_id):
                "justify-content": "center",
                })
 
-    header = html.Div(children=[html.Img(src=dash.get_asset_url(img_url), style={'width': '30%'}),
+    df_ranks = df[["MPG_rank", "PPG_rank", "PIR_rank",
+                   "PER_rank", "EFG_rank", "USG_rank"]]
+
+    df_ranks = df_ranks.round(1)
+    df_ranks.columns = ["MPG", "PPG", "PIR", "PER", "EFG", "USG"]
+    data_ranks = df_ranks.to_dict("records")
+
+    col_ranks = [{"name": i, "id": i} for i in df_ranks.columns]
+
+    def highlight_ranks(df_local):
+
+        conditional_dict = [[{"if": {"column_id": col,
+                                     "filter_query": "{" + col + "}  <= " + f"25"},
+                              "color": "#9d9d9d"
+                              },
+                             {"if": {"column_id": col,
+                                     "filter_query": "{" + col + "} >" + f"25" + " && {" + col + "} <= " + f"50"},
+                              "color": "#1eff00"
+                              },
+                             {"if": {"column_id": col,
+                                     "filter_query": "{" + col + "} > " + f"50" + " && {" + col + "} <= " + f"75"},
+                              "color": "#0070dd"
+                              },
+                             {"if": {"column_id": col,
+                                     "filter_query": "{" + col + "} > " + f"75" + " && {" + col + "} <= " + f"95"},
+                              "color": "#a335ee"
+                              },
+                             {"if": {"column_id": col,
+                                     "filter_query": "{" + col + "} > " + f"95" + " && {" + col + "} <= " + f"100"},
+                              "color": "#ff8000"
+                              }] for col in df_local.columns]
+
+        conditional_dict = sum(conditional_dict, [])
+
+        return conditional_dict
+
+    rank_table = dash_table.DataTable(
+        data=data_ranks,
+        columns=col_ranks,
+        style_cell={"font_size": "16px",
+                    "font_family": "sans-serif",
+                    "text-align": "center",
+                    "background-color": '#222222',
+                    "font-weight": "bold"},
+        style_header={"font_size": "12px",
+                      "font_family": "sans-serif",
+                      "text-align": "center",
+                      "color": "white"},
+        style_data_conditional=highlight_ranks(df_ranks),
+        fill_width=True,
+
+    )
+
+    header = html.Div(children=[html.Img(src=dash.get_asset_url(img_url), style={'width': '33%'}),
                                 player_text],
                       style={"display": "flex",
                              "flex-direction": "row",
                              "align-items": "center",
-                             "justify-content": "center",
-                             "width": "50%"})
+                             "justify-content": "center"
+                             })
 
-    return [header, stats_wrapper]
+    player_bio = html.Div(children=[header,
+                                    rank_table],
+                          style={"display": "flex",
+                                 "flex-direction": "column",
+                                 "width": "30%",
+                                 "align-items": "center",
+                                 "justify-content": "center"
+                                 })
+
+    return [player_bio, stats_wrapper, html.Div(points_plot, style={"width": "30%"})]
 
 
 @callback(
@@ -325,12 +392,11 @@ def call_assists_api(player_id):
 
 @callback(
     Output(component_id="points-plot", component_property="children"),
-    Input(component_id="points-plot-store", component_property="data"),
     Input(component_id="json-store-source", component_property="data"),
     Input(component_id="json-store-target", component_property="data"),
 
 )
-def update_plots(points_fig, response_source, response_target):
+def update_plots(response_source, response_target):
     df_source = pd.DataFrame.from_dict(response_source)
     df_target = pd.DataFrame.from_dict(response_target)
 
@@ -357,14 +423,15 @@ def update_plots(points_fig, response_source, response_target):
         node=dict(
             pad=15,
             thickness=20,
-            line=dict(color="black", width=0.5),
+            line=dict(width=0.5),
             label=labels_source,
-            color="blue"
+            color="#F6BD60"
         ),
         link=dict(
             source=sankey_df_source["source"],
             target=sankey_df_source["target"],
-            value=sankey_df_source["value"]
+            value=sankey_df_source["value"],
+            color="#84A59D"
         ))])
 
     # target plot
@@ -391,21 +458,21 @@ def update_plots(points_fig, response_source, response_target):
         node=dict(
             pad=15,
             thickness=20,
-            line=dict(color="black", width=0.5),
+            line=dict(width=0.5),
             label=labels_target,
-            color="blue"
+            color="#F7EDE2"
         ),
         link=dict(
             source=sankey_df_target["source"],
             target=sankey_df_target["target"],
-            value=sankey_df_target["value"]
+            value=sankey_df_target["value"],
+            color="#F28482"
         ))])
 
     children = [
         html.Div(dcc.Graph(
             figure=left_fig,
             id="sankey-left")),
-        html.Div(points_fig),
         html.Div(dcc.Graph(
             figure=right_fig,
             id="sankey-right"))
