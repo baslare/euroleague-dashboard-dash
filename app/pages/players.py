@@ -53,7 +53,8 @@ def layout(player_id="PTGB"):
                      style={"display": "flex",
                             "flex-direction": "row",
                             "justify-content": "center",
-                            "width": "80%"
+                            "width": "80%",
+                            "margin-top":"2%"
                             }),
             html.Div(id="points-plot", children=[], style={"display": "flex",
                                                            "flex-direction": "row"
@@ -182,6 +183,7 @@ def update_player_highlights(response, player_id, points_plot):
                "flex-direction": "column",
                "align-items": "center",
                "justify-content": "center",
+               "margin-left": "5%"
                })
 
     df_ranks = df[["MPG_rank", "PPG_rank", "PIR_rank",
@@ -223,10 +225,10 @@ def update_player_highlights(response, player_id, points_plot):
     rank_table = dash_table.DataTable(
         data=data_ranks,
         columns=col_ranks,
-        style_cell={"font_size": "16px",
+        style_cell={"font_size": "14px",
                     "font_family": "sans-serif",
                     "text-align": "center",
-                    "background-color": '#222222',
+                    "background-color": '#363636',
                     "font-weight": "bold"},
         style_header={"font_size": "12px",
                       "font_family": "sans-serif",
@@ -237,7 +239,11 @@ def update_player_highlights(response, player_id, points_plot):
 
     )
 
-    header = html.Div(children=[html.Img(src=dash.get_asset_url(img_url), style={'width': '33%'}),
+    rank_table = html.Div(rank_table, style={"width": "90%", "margin-top": "5%"})
+
+    header = html.Div(children=[html.Img(src=dash.get_asset_url(img_url), style={'width': '33%',
+                                                                                 "border": "solid",
+                                                                                 "border-width": "thin"}),
                                 player_text],
                       style={"display": "flex",
                              "flex-direction": "row",
