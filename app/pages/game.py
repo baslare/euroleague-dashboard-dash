@@ -71,8 +71,6 @@ def layout(game_code=1):
     return layout_local
 
 
-
-
 @callback(
     Output(component_id="json-store", component_property="data"),
     Input(component_id="game-code-store", component_property="data")
