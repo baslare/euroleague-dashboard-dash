@@ -35,10 +35,11 @@ def layout(team_code="MAD"):
     Output(component_id="team-header", component_property="children"),
     Input(component_id="team-code-store", component_property="data"),
     Input(component_id="court-figure-store", component_property="data"),
-    Input(component_id="team-points-store", component_property="data")
+    Input(component_id="team-points-store", component_property="data"),
+    Input(component_id="team-data-store",component_property="data")
 
 )
-def update_team_header(team_code, court_df, points):
+def update_team_header(team_code, court_df, points, response_team):
     team_img_url = f"{team_code}.png"
 
     df = pd.DataFrame.from_dict(points)
