@@ -121,6 +121,7 @@ def update_key_stats_df(response):
     df = pd.DataFrame.from_dict(response)
 
     mid_col = ["2P%", "3P%", "FT%", "DREB%", "OREB%", "AS", "TO", "ST", "BL", "POS", "ORtg"]
+    df["home"] = df["home"].astype(bool)
 
     l_u_1 = f"{df.loc[df['home'], '2FGM'].iloc[0]} / {df.loc[df['home'], '2FGA'].iloc[0]} ({100 * df.loc[df['home'], '2FGR'].iloc[0]:.2f}%)"
     l_u_2 = f"{df.loc[df['home'], '3FGM'].iloc[0]} / {df.loc[df['home'], '3FGA'].iloc[0]} ({100 * df.loc[df['home'], '3FGR'].iloc[0]:.2f}%)"
