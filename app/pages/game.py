@@ -13,6 +13,10 @@ features = pd.read_csv("assets/features.csv")
 
 
 def layout(game_code=1):
+    init_team = requests.get(f"http://euroleague-api:8989/SeasonTeams")
+    init_team = init_team.json()
+    init_team = {x["CODETEAM"]: x["team_name"] for x in init_team}
+
     game_id_store = dcc.Store(id="game-code-store", data=game_code)
     json_store = dcc.Store(id="json-store", data={})
     json_store_team = dcc.Store(id="json-store-teams", data={})
@@ -21,6 +25,7 @@ def layout(game_code=1):
     key_stats_table_store = dcc.Store(id="key-stats-table-store", data={})
     key_stats_json = dcc.Store(id="key-stats-json", data=[])
     court_figure_df = dcc.Store(id="court-figure-store", data=features.to_json(orient="split"))
+    json_store_init_team = dcc.Store(id="json-store-init-team-game", data=init_team)
 
     layout_local = html.Div(
         children=[
@@ -40,18 +45,22 @@ def layout(game_code=1):
             key_stats_table_store,
             key_stats_json,
             court_figure_df,
-            html.Div(id="score-title", style={"height": "100px",
-                                              "width": "700px",
-                                              "display": "flex",
-                                              "align-items": "center",
-                                              "justify-content": "center",
-                                              "position": "relative",
-                                              "left": "50%",
-                                              "transform": "translate(-50%,0)"}),
-            html.Div(id="key-stats", children=[], style={
+            json_store_init_team,
+            html.Div(id="score-title",
+                     style={"display": "flex",
+                            "align-items": "center",
+                            "justify-content": "center"
+                            }),
+            html.Div(html.Div(id="key-stats", children=[], style={
                 "display": "flex",
                 "align-items": "center",
-                "justify-content": "center"}),
+                "justify-content": "center",
+                "width": "65%"}),
+                     style={"display": "flex",
+                            "justify-content": "center",
+                            "align-items": "center"})
+
+            ,
             html.Div(id="box-score", children=[], style={
                 "display": "flex",
                 "align-items": "flex-start",
@@ -83,9 +92,10 @@ def call_players_api(game_code):
 
 @callback(
     Output(component_id="score-title", component_property="children"),
-    Input(component_id="json-store", component_property="data")
+    Input(component_id="json-store", component_property="data"),
+    Input(component_id="json-store-init-team-game", component_property="data")
 )
-def plot_game_points(response):
+def plot_game_points(response, team_dict):
     df = pd.DataFrame.from_dict(response)
     df = df.groupby(["CODETEAM", "home"]).agg({"pts": "sum"}).reset_index()
     home_score = df.loc[df["home"], "pts"].iloc[0]
@@ -97,10 +107,43 @@ def plot_game_points(response):
     home_img_url = f"{home_team}.png"
     away_img_url = f"{away_team}.png"
 
-    return [html.Img(src=dash.get_asset_url(home_img_url), style={"height": "100%"}),
-            html.H2(f"{home_team} {home_score} - {away_score} {away_team}",
-                    style={"textAlign": "center", "width": "50%"}),
-            html.Img(src=dash.get_asset_url(away_img_url), style={"height": "100%"})]
+    left_team = html.Div(children=[
+        html.H5(html.A(team_dict[home_team], href=f"/teams/{home_team}"))
+    ],
+        style={"display": "flex",
+               "flex-direction": "row",
+               "align-items": "center",
+               "justify-content": "flex-end",
+               "width":"30%"})
+
+    right_team = html.Div(children=[
+
+        html.H5(html.A(team_dict[away_team], href=f"/teams/{away_team}"))
+    ],
+        style={"display": "flex",
+               "flex-direction": "row",
+               "align-items": "center",
+               "justify-content": "flex-start",
+               "width":"30%"}
+    )
+
+    score_card = html.Div(children=[
+        html.Img(src=dash.get_asset_url(home_img_url), style={"width": "25%"}),
+        html.H2(f"{home_score} - {away_score}",
+                style={"textAlign": "center", "width": "50%"}),
+        html.Img(src=dash.get_asset_url(away_img_url), style={"width": "25%"})
+
+    ],
+        style={"display": "flex",
+               "flex-direction": "row",
+               "align-items": "center",
+               "justify-content": "center",
+               "width": "25%"},
+    )
+
+    return [left_team,
+            score_card,
+            right_team]
 
 
 @callback(
@@ -304,13 +347,17 @@ def plot_points(response, key_stats_df, court_df):
     chart_home = html.Div(dcc.Graph(
         figure=fig_home,
         id="points-home"),
-        style={"width": "25%"})
+        style={"width": "40%"})
     chart_away = html.Div(dcc.Graph(
         figure=fig_away,
         id="points-away"),
-        style={"width": "25%"})
+        style={"width": "40%"})
 
-    return [chart_home, key_stats_df, chart_away]
+    table_mid = html.Div(children=key_stats_df, style={"width": "20%",
+                                                       "display": "flex",
+                                                       "justify-content": "center"})
+
+    return [chart_home, table_mid, chart_away]
 
 
 @callback(

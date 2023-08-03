@@ -21,12 +21,17 @@ def layout(player_id="PTGB"):
 
     options = {y: x for x, y in zip(init_player["playerName"], init_player["PLAYER_ID"])}
 
+    init_team = requests.get(f"http://euroleague-api:8989/SeasonTeams")
+    init_team = init_team.json()
+    init_team = {x["CODETEAM"]: x["team_name"] for x in init_team}
+
     id_store = dcc.Store(id="player-id-store", data=player_id)
     json_store_player = dcc.Store(id="json-store-player", data=[])
     json_store_points = dcc.Store(id="json-store-points-player", data=[])
     json_store_source = dcc.Store(id="json-store-source", data=[])
     json_store_target = dcc.Store(id="json-store-target", data=[])
     points_plot_store = dcc.Store(id="points-plot-store", data=[])
+    json_store_init_team = dcc.Store(id="json-store-init-team", data=init_team)
 
     layout_local = html.Div(
 
@@ -48,6 +53,7 @@ def layout(player_id="PTGB"):
             json_store_target,
             json_store_source,
             points_plot_store,
+            json_store_init_team,
             html.Div(id="player-highlights",
                      children=[],
                      style={"display": "flex",
@@ -87,9 +93,10 @@ def call_players_api(player_id):
     Output(component_id="player-highlights", component_property="children"),
     Input(component_id="json-store-player", component_property="data"),
     Input(component_id="player-id-store", component_property="data"),
-    Input(component_id="points-plot-store", component_property="data")
+    Input(component_id="points-plot-store", component_property="data"),
+    Input(component_id="json-store-init-team", component_property="data")
 )
-def update_player_highlights(response, player_id, points_plot):
+def update_player_highlights(response, player_id, points_plot, team_dict):
     df = pd.DataFrame(response, index=[0])
 
     df["as2P"] = df["assisted_2fg"] / df["2FGM"]
@@ -173,10 +180,12 @@ def update_player_highlights(response, player_id, points_plot):
 
     img_url = f"photos/{player_id}.png"
 
+    team_name = team_dict[df_highlight['CODETEAM'].loc[0]]
+
     player_text = html.Div(children=[
         html.H4(f"{df_highlight['playerName'].loc[0]}", style={"vertical-align": "top"}),
         html.H6(f"{df_highlight['p'].loc[0]}", style={"vertical-align": "top"}),
-        html.H6(f"{df_highlight['CODETEAM'].loc[0]}", style={"vertical-align": "top"})
+        html.H6(html.A(f"{team_name}", href=f"/teams/{df_highlight['CODETEAM'].loc[0]}"), style={"vertical-align": "top"})
 
     ],
         style={"display": "flex",

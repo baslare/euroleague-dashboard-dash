@@ -95,7 +95,10 @@ def update_team_header(team_code, court_df, points, response_team):
         line=dict(width=0),
         hoverinfo='none',
         xaxis="x",
-        yaxis="y"
+        yaxis="y",
+
+        nbinsx=30,
+        nbinsy=30
     )).add_trace(
         go.Scatter(x=df["COORD_X"].tolist(),
                    y=df["COORD_Y"].tolist(),
@@ -234,7 +237,7 @@ def update_team_players_table(response):
 
     df = pd.DataFrame.from_dict(response)
 
-    rp_quantile = requests.get(f"http://euroleague-api:8989/Quantile?type_quantile=player")
+    rp_quantile = requests.get(f"http://euroleague-api:8989/Quantile?type_quantile=player_agg")
     rp_quantile = rp_quantile.json()
 
     df_quantile = pd.DataFrame.from_dict(rp_quantile)
