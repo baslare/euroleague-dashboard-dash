@@ -131,6 +131,7 @@ def update_team_header(team_code, court_df, points, response_team):
     chart = html.Div(dcc.Graph(
         figure=fig,
         id="points-team"),
+        className="points",
         style={"width": "35%"})
 
     df_team = pd.DataFrame(response_team, index=[0])
@@ -148,8 +149,7 @@ def update_team_header(team_code, court_df, points, response_team):
 
     pct_stats = ["2FGR", "as2P", "3FGR", "as3P", "FG", "FT_four", "TOR", "DREBR", "OREBR"]
 
-    df_team.loc[:,
-    pct_stats] = (100 * df_team[pct_stats]).astype(np.float64).round(1).astype(
+    df_team.loc[:, pct_stats] = (100 * df_team[pct_stats]).astype(np.float64).round(1).astype(
         str) + "%"
 
     df_team.loc[:, non_pct_stats] = df_team[non_pct_stats].astype(np.float64).round(1)
@@ -169,10 +169,10 @@ def update_team_header(team_code, court_df, points, response_team):
         table = dash_table.DataTable(
             data=data_row,
             columns=col_row,
-            style_cell={"font_size": "10px",
+            style_cell={
                         "font_family": "sans-serif",
                         "text-align": "center"},
-            style_header={"font_size": "10px",
+            style_header={
                           "font_family": "sans-serif",
                           "text-align": "center"},
 
@@ -294,10 +294,10 @@ def update_team_players_table(response):
     table = dash_table.DataTable(
         data=df_highlight.to_dict("records"),
         columns= cols,
-        style_cell={"font_size": "10px",
+        style_cell={
                     "font_family": "sans-serif",
                     "text-align": "center"},
-        style_header={"font_size": "10px",
+        style_header={
                       "font_family": "sans-serif",
                       "text-align": "center"},
         style_as_list_view=True,

@@ -11,15 +11,16 @@ server = app.server
 navigation_bar = html.Div(
     dbc.NavbarSimple([
         dbc.NavLink('About This App', href='/home', active='exact', id='home-navlink'),
-        dbc.NavLink('Game Data', href='/game', active='exact', id='game-navlink'),
-        dbc.NavLink("Lineup Data", href="/lineup", active="exact", id='lineup-navlink'
+        dbc.NavLink('Games', href='/game', active='exact', id='game-navlink'),
+        dbc.NavLink('Teams', href='/teams', active='exact', id='teams-navlink'),
+        dbc.NavLink("Lineups", href="/lineup", active="exact", id='lineup-navlink'
                     ),
-        dbc.NavLink("Player Data", href="/players", active='exact', id='players-navlink'
+        dbc.NavLink("Players", href="/players", active='exact', id='players-navlink'
                     ),
     ],
         color='primary',
         dark=True,
-        brand="Euroleague Advanced Statistics Dashboard"
+        brand="Euroleague Advanced Statistics"
 
     )
 )

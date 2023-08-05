@@ -32,9 +32,13 @@ def layout(game_code=1):
 
             html.Div(["Enter game code",
                       dcc.Input(id="game-code-input", type="number", value=game_code),
-                      html.Button('Submit', id='submit-val-game', n_clicks=0)], style={"display": "flex",
-                                                                                       "flex-direction": "row",
-                                                                                       "width": "50%"})
+                      html.Button('Submit', id='submit-val-game', n_clicks=0)], style={
+                "display": "flex",
+                "flex-direction": "row",
+                "justify-content": "center",
+                "width": "50%",
+                "margin-top": "1rem"
+            })
             ,
             dcc.Location(id="location-game"),
             game_id_store,
@@ -61,10 +65,7 @@ def layout(game_code=1):
                             "align-items": "center"})
 
             ,
-            html.Div(id="box-score", children=[], style={
-                "display": "flex",
-                "align-items": "flex-start",
-                "justify-content": "center"}),
+            html.Div(id="box-score", children=[], className="box-score-wrapper"),
             html.Div(id="assist-charts", children=[], style={
                 "display": "flex",
                 "align-items": "flex-start",
@@ -216,7 +217,6 @@ def update_key_stats_output(json_df):
              "textAlign": "left"}
         ],
         style_header={"display": "none"},
-        style_cell={"font_size": "12px"},
         fill_width=False
 
     )
@@ -347,10 +347,12 @@ def plot_points(response, key_stats_df, court_df):
     chart_home = html.Div(dcc.Graph(
         figure=fig_home,
         id="points-home"),
+        className="points",
         style={"width": "40%"})
     chart_away = html.Div(dcc.Graph(
         figure=fig_away,
         id="points-away"),
+        className="points",
         style={"width": "40%"})
 
     table_mid = html.Div(children=key_stats_df, style={"width": "20%",
@@ -423,8 +425,8 @@ def update_boxscore(response):
         id='box-score-table-home',
         data=df_dict_home,
         columns=cols,
-        style_cell={"font_size": "10px",
-                    "font_family": "sans-serif"},
+        style_cell={
+                    "font-family": "sans-serif"},
         fill_width=False,
         markdown_options={"html": True},
         style_data_conditional=[
@@ -473,7 +475,7 @@ def update_boxscore(response):
         data=df_dict_away,
         columns=cols,
         # style_header={"display": "none"},
-        style_cell={"font_size": "10px",
+        style_cell={
                     "font_family": "sans-serif"},
         fill_width=False,
         markdown_options={"html": True},

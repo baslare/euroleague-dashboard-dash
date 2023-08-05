@@ -62,9 +62,7 @@ def layout(player_id="PTGB"):
                             "width": "80%",
                             "margin-top":"2%"
                             }),
-            html.Div(id="points-plot", children=[], style={"display": "flex",
-                                                           "flex-direction": "row"
-                                                           }),
+            html.Div(id="points-plot", children=[], className="sankey-wrapper"),
             html.Div(id="history-table", children=[], style={"width": "60%"}),
             html.Div(id="player-table", children=[])
 
@@ -153,10 +151,10 @@ def update_player_highlights(response, player_id, points_plot, team_dict):
         table = dash_table.DataTable(
             data=data_row,
             columns=col_row,
-            style_cell={"font_size": "10px",
+            style_cell={
                         "font_family": "sans-serif",
                         "text-align": "center"},
-            style_header={"font_size": "10px",
+            style_header={
                           "font_family": "sans-serif",
                           "text-align": "center"},
 
@@ -234,12 +232,12 @@ def update_player_highlights(response, player_id, points_plot, team_dict):
     rank_table = dash_table.DataTable(
         data=data_ranks,
         columns=col_ranks,
-        style_cell={"font_size": "14px",
+        style_cell={
                     "font_family": "sans-serif",
                     "text-align": "center",
                     "background-color": '#363636',
                     "font-weight": "bold"},
-        style_header={"font_size": "12px",
+        style_header={
                       "font_family": "sans-serif",
                       "text-align": "center",
                       "color": "white"},
@@ -269,7 +267,7 @@ def update_player_highlights(response, player_id, points_plot, team_dict):
                                  "justify-content": "center"
                                  })
 
-    return [player_bio, stats_wrapper, html.Div(points_plot, style={"width": "30%"})]
+    return [player_bio, stats_wrapper, html.Div(points_plot, className="points", style={"width": "30%"})]
 
 
 @callback(
@@ -554,10 +552,10 @@ def update_history_table(player_id):
         id='history-table-data',
         data=data,
         columns=cols,
-        style_cell={"font_size": "10px",
+        style_cell={
                     "font_family": "sans-serif",
                     "text-align": "center"},
-        style_header={"font_size": "10px",
+        style_header={
                       "font_family": "sans-serif",
                       "text-align": "center"},
 
