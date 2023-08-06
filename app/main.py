@@ -32,4 +32,5 @@ app.layout = html.Div([
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80, debug=True)
+    context = ('local.crt', 'local.key')
+    app.run(host="0.0.0.0", port=80, debug=True, ssl_context=context)
