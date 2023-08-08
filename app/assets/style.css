@@ -19,7 +19,7 @@ td:hover::after {
 
 
 html {
-    font-size: calc(6px + 0.350625vw);
+    font-size: calc(6px + 0.160625vw);
 }
 
 
@@ -43,7 +43,7 @@ h5 {
     font-size: 1.5rem;
 }
 h6 {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
 }
 
 
@@ -54,16 +54,69 @@ h6 {
     }
 
     .sankey-wrapper{
-            display: flex;
-            flex-direction: column;
+            display: none;
     }
 
     .box-score-wrapper{
                 display: flex;
                 flex-direction: column;
+                gap: 1rem;
+
+
+
+    }
+
+    .player-highlights-style{
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 80%;
+                margin-top:2%;
+                gap:1rem;
+    }
+
+    .player-bio{
+                display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
+                }
+
+    .stats-wrapper{
+                width:100%;
+                display: flex;
+                flex-direction: column;
+                gap: 0.7rem;
+                               }
+
+
+                
+    .team-header{
+                display: flex;
+                flex-direction: column;
+                width: 90%;
+                justify-content: center;
+                align-items: center;
     }
+
+    .team-logo{
+                width: 20%;
+                height: auto;
+          }
+          
+    .score-title{
+                text-align: center;
+                width: 50%;
+                font-size:1.2rem;
+                font-weight: bold;
+    }
+
+    .dropdown-top{
+                display: flex;
+                flex-direction: row;
+                width: 100%;
+                justify-content: center;
+                }
 }
 
 @media screen and (min-width: 701px){
@@ -77,9 +130,68 @@ h6 {
     .box-score-wrapper{
                 display: flex;
                 flex-direction: row;
+                align-items: flex-start;
+                justify-content: center;
+    }
+    
+    .player-highlights-style{
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                width: 80%;
+                margin-top:2%
+                gap:1rem;
+    }
+    
+    .player-bio{
+                display: flex;
+                flex-direction: column;
+                width: 30%;
                 align-items: center;
                 justify-content: center;
     }
+
+    .stats-wrapper{
+                width:20%;
+                display: flex;
+                flex-direction: column;
+                gap: 0.7rem;
+    }
+
+    .team-header{
+                display: flex;
+                flex-direction: row;
+                width: 90%;
+                justify-content: center;
+                align-items: center;
+    }
+
+    .team-logo{
+                width: 20%;
+                height: auto;
+          }
+
+
+    .score-title{
+                text-align: center;
+                width: 50%;
+                font-size:4rem;
+                font-weight: bold;
+    }
+
+    .dropdown-top{
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                width: 50%;
+                }
+
+
+
+
 }
+                                                      
+                           
+
 
 

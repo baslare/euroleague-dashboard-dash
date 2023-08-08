@@ -41,10 +41,8 @@ def layout(player_id="PTGB"):
             id="dropdown-player"
 
         ),
-            style={"width": "50%"}),
-            html.Button('Submit', id='submit-val', n_clicks=0)], style={"display": "flex",
-                                                                        "flex-direction": "row",
-                                                                        "width": "50%"}),
+            style={"width": "80%"}),
+            html.Button('Submit', id='submit-val', n_clicks=0)], className="dropdown-top"),
             dcc.Location(id="location"),
             court_figure_df,
             json_store_points,
@@ -56,12 +54,8 @@ def layout(player_id="PTGB"):
             json_store_init_team,
             html.Div(id="player-highlights",
                      children=[],
-                     style={"display": "flex",
-                            "flex-direction": "row",
-                            "justify-content": "center",
-                            "width": "80%",
-                            "margin-top":"2%"
-                            }),
+                     className="player-highlights-style"),
+
             html.Div(id="points-plot", children=[], className="sankey-wrapper"),
             html.Div(id="history-table", children=[], style={"width": "60%"}),
             html.Div(id="player-table", children=[])
@@ -160,11 +154,8 @@ def update_player_highlights(response, player_id, points_plot, team_dict):
 
         )
 
-        return html.Div([html.Div(children=table, style={"height": "75%"}),
-                         html.Div(style={"height": "10px"})],
-                        style={"display": "flex",
-                               "flex-direction": "column",
-                               })
+        return html.Div(children=table)
+
 
     children_list = []
 
@@ -172,9 +163,8 @@ def update_player_highlights(response, player_id, points_plot, team_dict):
         children_list.append(generate_dash_elements(x))
 
     stats_wrapper = html.Div(children=children_list,
-                             style={"width": "20%"
+                             className="stats-wrapper")
 
-                                    })
 
     img_url = f"photos/{player_id}.png"
 
@@ -260,14 +250,12 @@ def update_player_highlights(response, player_id, points_plot, team_dict):
 
     player_bio = html.Div(children=[header,
                                     rank_table],
-                          style={"display": "flex",
-                                 "flex-direction": "column",
-                                 "width": "30%",
-                                 "align-items": "center",
-                                 "justify-content": "center"
-                                 })
+                          className="player-bio"
+
+                                 )
 
     return [player_bio, stats_wrapper, html.Div(points_plot, className="points", style={"width": "30%"})]
+
 
 
 @callback(

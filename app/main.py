@@ -10,7 +10,7 @@ server = app.server
 
 navigation_bar = html.Div(
     dbc.NavbarSimple([
-        dbc.NavLink('About This App', href='/home', active='exact', id='home-navlink'),
+        dbc.NavLink('Home', href='/', active='exact', id='home-navlink'),
         dbc.NavLink('Games', href='/game', active='exact', id='game-navlink'),
         dbc.NavLink('Teams', href='/teams', active='exact', id='teams-navlink'),
         dbc.NavLink("Lineups", href="/lineup", active="exact", id='lineup-navlink'

@@ -42,3 +42,6 @@ def layout():
 )
 def navigate_to_url(val, n_clicks):
     return f"/players/{val}"
+
+
+

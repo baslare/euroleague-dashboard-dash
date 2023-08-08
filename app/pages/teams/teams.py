@@ -33,22 +33,15 @@ def layout(team_code="MAD"):
             id="dropdown-team"
 
         ),
-            style={"width": "50%"}),
-            html.Button('Submit', id='submit-val-team', n_clicks=0)], style={"display": "flex",
-                                                                        "flex-direction": "row",
-                                                                        "width": "50%"}),
+            style={"width": "80%"}),
+            html.Button('Submit', id='submit-val-team', n_clicks=0)], className="dropdown-top"),
         dcc.Location(id="location-team"),
         team_id_store,
         team_data_store,
         team_points_store,
         team_players_store,
         court_figure_df,
-        html.Div(id="team-header", children=[], style={"display": "flex",
-                                                       "flex-direction": "row",
-                                                       "width": "90%",
-                                                       "justify-content": "center",
-                                                       "align-items": "center"
-                                                       }),
+        html.Div(id="team-header", children=[], className="team-header"),
         html.Div(id="team-players-table", children=[], style={"width": "85%"})
 
     ],
@@ -178,11 +171,7 @@ def update_team_header(team_code, court_df, points, response_team):
 
         )
 
-        return html.Div([html.Div(children=table, style={"height": "75%"}),
-                         html.Div(style={"height": "10px"})],
-                        style={"display": "flex",
-                               "flex-direction": "column",
-                               })
+        return html.Div(children=table)
 
     children_list = []
 
@@ -190,11 +179,11 @@ def update_team_header(team_code, court_df, points, response_team):
         children_list.append(generate_dash_elements(x))
 
     stats_wrapper = html.Div(children=children_list,
-                             style={"width": "20%"
+                             className="stats-wrapper"
 
-                                    })
+                                    )
 
-    return [html.Img(src=dash.get_asset_url(team_img_url), style={"width": "20%", "height": "auto"}),
+    return [html.Img(src=dash.get_asset_url(team_img_url), className="team-logo"),
             chart,
             stats_wrapper]
 

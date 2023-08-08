@@ -109,7 +109,7 @@ def plot_game_points(response, team_dict):
     away_img_url = f"{away_team}.png"
 
     left_team = html.Div(children=[
-        html.H5(html.A(team_dict[home_team], href=f"/teams/{home_team}"))
+        html.H6(html.A(team_dict[home_team], href=f"/teams/{home_team}"))
     ],
         style={"display": "flex",
                "flex-direction": "row",
@@ -119,19 +119,19 @@ def plot_game_points(response, team_dict):
 
     right_team = html.Div(children=[
 
-        html.H5(html.A(team_dict[away_team], href=f"/teams/{away_team}"))
+        html.H6(html.A(team_dict[away_team], href=f"/teams/{away_team}"))
     ],
         style={"display": "flex",
                "flex-direction": "row",
                "align-items": "center",
                "justify-content": "flex-start",
-               "width":"30%"}
+               "width": "30%"}
     )
 
     score_card = html.Div(children=[
         html.Img(src=dash.get_asset_url(home_img_url), style={"width": "25%"}),
-        html.H2(f"{home_score} - {away_score}",
-                style={"textAlign": "center", "width": "50%"}),
+        html.Div(f"{home_score} - {away_score}", className="score-title"
+                ),
         html.Img(src=dash.get_asset_url(away_img_url), style={"width": "25%"})
 
     ],
